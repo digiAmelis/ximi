@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<!-- saved from url=(0035)https://api.ximi.xelya.io/Amli/Help -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width">
+    <title>Ximi API - Documentation</title>
+    
+</head>
+<body>
+    
+
+<link type="text/css" href="./Ximi API - Documentation - générique_files/HelpPage.css" rel="stylesheet">
+<header class="help-page">
+    <div class="content-wrapper">
+        <div class="float-left">
+            <h1>Ximi API - Documentation</h1>
+        </div>
+    </div>
+</header>
+<div id="body" class="help-page">
+    <section class="featured">
+        <div class="content-wrapper">
+            <h2>Introduction</h2>
+            <p>
+                L'API Ximi est un service web hébergé par Xelya, à destination des structures clientes de Ximi, et qui veulent interfacer directement avec Ximi leurs sites web ou extranets.
+                <br>
+                <br>
+                L'API utilise un protocole <strong>REST JSON</strong> via HTTPS.
+                <br>
+                Le contenu de toutes les requêtes et réponses est au format JSON, et encodé en <strong>UTF-8</strong>.
+                <br>
+                <br>
+                L'API est structurée par fonctionnalités. Certaines sont accessibles uniquement sur option.
+                <br>
+                <br>
+                Les méthodes de l'API permettent d'accéder à une liste d'objets et/ou au détail d'un objet (GET), de créer de nouveaux objets (POST) ou d'en mettre à jour (PUT)
+                <br>
+                <br>
+                Un <strong>Swagger</strong> est disponible à l'adresse suivante : <strong><a href="https://api.ximi.xelya.io/Amli/swagger" target="_blank">Swagger API Ximi</a></strong>.
+                <br>
+                <br>
+                <i>Un exemple d'utilisation de l'API est disponible sous la forme d'un <strong><a href="https://api.ximi.xelya.io/Amli/Static/Exemple%20API%20Ximi.postman_collection.json" target="_blank">fichier Postman</a></strong>.</i>
+            </p>
+
+            <h2>Initialisation</h2>
+            <p>
+                L'utilisation de l'API est autorisée par l'activation d'un accès avec identifiant unique.
+                <br>
+                L'identification et l'authentification sont assurées au moyen d'un token <strong><a href="https://jwt.io/introduction/">JWT</a></strong>.
+                <br>
+                Le token JWT, qui devra être passé dans chaque requête de l'API, contient notamment <strong>l'identifiant unique</strong> qui vous sera attribué par Xelya.
+                Cet identifiant vous donne accès, via l'API, aux données d'une application au sein de Ximi.
+                <br><br>
+                Le token est signé via une clé <strong>RSA 2048</strong>.
+                <br>
+                En tant que consommateur de l'API, vous devez préalablement générer une clé RSA de taille 2048 bit.
+                <br>
+                La génération de cette clé peut se faire via des outils comme OpenSSH.
+                <br>
+                Vous conservez la partie privée de la clé. La partie publique doit nous être envoyée au format <strong>PEM</strong>, elle nous servira à vérifier la signature des tokens JWT.
+            </p>
+
+            <h2>Authentification</h2>
+            
+            <h3>Header API-Key</h3>
+            <p>
+                Un token JWT doit être généré au début d'une séquence d'utilisation de l'API,
+                <br>
+                et doit être transmis dans tous les appels aux méthodes de l'API, dans un Header nommé <strong>API-Key</strong>
+                <br><br>
+                La valeur de ce header doit être un token JWT avec le contenu suivant :
+                <br>
+                </p><pre class="code">                    Header : { "alg": "RS512", "typ" : "JWT"}
+                    Payload: { “sub": "&lt;identifiant unique&gt;", "exp" : "&lt;timestamp&gt;" }
+                    Signature : &lt;base 64 encoding of the signature&gt;
+                </pre>
+                <br><br>
+                Le contenu de <strong>Header</strong> est fixe; l'algorithme de signature est RS512.
+                <br>
+                Le <strong>Payload</strong> doit contenir :
+                <br>
+                - dans <strong>"sub"</strong> la valeur de l'identifiant unique qui vous a été fourni par Xelya, et qui identifie un tenant/application Ximi.
+                <br>
+                Le format de l'identifiant ressemble à ceci : <strong>a067d785-7947-4092-1f39-f0576ad4b1c9</strong>
+                <br>
+                - dans <strong>"exp"</strong> une date d'expiration, exprimée sous la forme d'un <strong><a href="http://www.timestamp.fr/">timestamp</a></strong>, ou nombre de secondes depuis le 1er janvier 1970.
+                <br>
+                Le contenu de <strong>Signature</strong> est généré en signant avec la clé privée les contenus encodés en Base 64 des Header et Payload.
+                <br><br>
+                Le contenu final passé dans le header API-Key ressemble à l'exemple suivant :
+                <br><br>
+                eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+            <p></p>
+
+            <h3>Bearer</h3>
+            <p>
+                L'appel à certaines méthodes de l'API, de périmètre User (en pratique, un Client, un Intervenant, un Aidant, etc) devra être fait avec un token d'accès utilisateur.
+                <br>
+                Pour cela, il faut au préalable appeler la méthode POST d'authentification user <strong>api/users/sessions</strong>.
+                <br>
+                Cette méthode retourne, entre autres informations, un Access token dont il faudra fournir le contenu dans le Header <strong>Authorization</strong> des requêtes subséquentes, sous la forme suivante :
+                <br>
+                </p><pre class="code">Authorization : Bearer &lt;token&gt;</pre>
+                <br>
+                <br>
+                <i>NOTE : même dans les appels aux méthodes qui nécessitent un token user, le header « API-Key » devra être présent et valide</i>
+            <p></p>
+
+            <h2>Requêtes</h2>
+            <p>
+                Chaque requête doit contenir au minimum les headers suivants :
+                <br>
+                <strong>Content-Type</strong> : application/json
+                <br>
+                <strong>API-Key</strong> : &lt;valeur du token JWT&gt;
+
+                <br>
+                <br>
+                <i>NOTE : les formats acceptés pour les champs de type DATE dans le corps de méthodes sont les suivants : YYYY-MM-DD, ISO 8601 (YYYY-MM-DDThh:mm:ssZ)</i>
+
+            </p>
+
+            <h2>Réponses</h2>
+            <p>
+                </p><h3>Méthodes GET de listes</h3>
+                Les méthodes qui retournent des listes d'objets ont une réponse JSON structurée ainsi :
+                <br>
+                <pre class="code">                    {
+                        Results : [] // liste des objets résultats de la requête
+                        HasMoreRows : boolean // Vaut true s'il y a des données supplémentaires (voir paramètres gérant la pagination)
+                        Hitcount : integer // Nombre d'éléments total, renseigné si dans la requête les paramètres ComputeHasMoreRows et ComputeHitCount sont à true
+                    }
+                </pre>
+                <br>
+                Chaque objet retourné contient généralement une propriété <strong>Id</strong> : integer, qui est l'identifiant unique de l'objet dans la base de données.
+                <br>
+                Cet Id correspond à la clé étrangère qu'on retrouve dans d'autres propriétés de certaines données résultats.
+                <br>
+                <h3>Méthodes POST de création</h3>
+                Les méthodes qui permettent de créer des objets ont une réponse JSON, en cas de succès, qui contient au moins une propriété <strong>Id</strong> : integer, qui est l'identifiant unique de l'objet qui vient d'être créé.
+                <h3>Méthodes GET de récupération des dernières modifications</h3>
+                Les méthodes de type <strong>api/xxxxx/changes</strong> qui attendent en input un paramètre <strong>"since"</strong> permettent de récupérer de façon efficace les derniers changements (création, modification ou suppression) sur la table en question.
+                <strong>"since"</strong> est un timestamp codé en hexadécimal. La valeur à fournir pour le premier appel, pour récupérer l'intégralité des enregistrements de la table, est 0000000000000000.
+                Chaque enregistrement retourné contient son timestamp actuel : cf champ <strong>Watermark</strong>. Donc le 2e appel faisant suite à l'appel initial peut passer en paramètre la valeur maximale des Watermark trouvée dans les données retournées (modulo la pagination : cf champ <strong>HasMoreRows</strong>)
+                Et ainsi de suite pour les appels suivants.
+            <p></p>
+
+        </div>
+    </section>
+    <section class="content-wrapper main-content clear-fix">
+        <br>
+        <h1>API</h1>
+        Liste exhaustive des méthodes disponibles :
+        <br>
+
+
+<h2 id="News">News</h2>
+    <p>Gestion des actualités</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-news_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/news?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des actualités<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Bills">Bills</h2>
+    <p>Gestion des Factures</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-bills_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search_lastModification_status">GET api/bills?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}&amp;lastModification={lastModification}&amp;status={status}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer les factures publiées et impayées<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Partners">Partners</h2>
+    <p>Gestion des partenaires</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-partners-id">GET api/partners/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer un partenaire<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-partners">POST api/partners</a></td>
+            <td class="api-documentation">
+                <p>Ajouter un partenaire<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-partners-id">PUT api/partners/{id}</a></td>
+            <td class="api-documentation">
+                <p>Modifier un partenaire<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-partners-id-access">POST api/partners/{id}/access</a></td>
+            <td class="api-documentation">
+                <p>Créer un accès extranet pour un partenaire<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/DELETE-api-partners-id-access">DELETE api/partners/{id}/access</a></td>
+            <td class="api-documentation">
+                <p>Supprimer l'accès extranet d'un partenaire<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Clients">Clients</h2>
+    <p>Gestion des clients</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients">GET api/clients</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des clients<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-changes_since_onlyClients">GET api/clients/changes?since={since}&amp;onlyClients={onlyClients}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des clients dernièrement créés ou modifiés<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id">GET api/clients/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer un client<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-clients">POST api/clients</a></td>
+            <td class="api-documentation">
+                <p>Créer un nouveau Client<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-clients-id">PUT api/clients/{id}</a></td>
+            <td class="api-documentation">
+                <p>Modifier un client<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-clients-id-notes">PUT api/clients/{id}/notes</a></td>
+            <td class="api-documentation">
+                <p>Ajouter une Note dans le Journal d'un client<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id-surveys_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/clients/{id}/surveys?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des enquêtes envoyées à un client et non répondues<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-clients-id-answerSurvey">PUT api/clients/{id}/answerSurvey</a></td>
+            <td class="api-documentation">
+                <p>Répondre à une enquête adressée au client<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-clients-id-access">POST api/clients/{id}/access</a></td>
+            <td class="api-documentation">
+                <p>Créer un accès extranet pour un client<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/DELETE-api-clients-id-access">DELETE api/clients/{id}/access</a></td>
+            <td class="api-documentation">
+                <p>Supprimer l'accès extranet d'un client<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id-bills">GET api/clients/{id}/bills</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des factures publiées d'un client avec option de filtrer sur le statut de paiement<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id-bills-billId-print">GET api/clients/{id}/bills/{billId}/print</a></td>
+            <td class="api-documentation">
+                <p>Imprimer une facture d'un client. La réponse retourne dans son body le contenu binaire du fichier PDF, et dans son Header &gt; ContentDisposition &gt; FileName le nom du fichier.<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clientEventTypes_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/clientEventTypes?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des Types d'événements client<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clientAbsenceReasons_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/clientAbsenceReasons?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des Types d'absence client<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id-events_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/clients/{id}/events?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des événements d'un client<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id-recurringEvents_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/clients/{id}/recurringEvents?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des événements périodiques actifs d'un client<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id-activeAgents_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/clients/{id}/activeAgents?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des intervenants actifs d'un client<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-clients-id-bills-billId-cashMvts">POST api/clients/{id}/bills/{billId}/cashMvts</a></td>
+            <td class="api-documentation">
+                <p>Créer un règlement pour une facture et un client donnés<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id-pajeCertificates_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/clients/{id}/pajeCertificates?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des attestations PAJE d'un client<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id-fiscalCertificates_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/clients/{id}/fiscalCertificates?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des attestations fiscales d'un client<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id-certificates-certificateId-print_certificateType">GET api/clients/{id}/certificates/{certificateId}/print?certificateType={certificateType}</a></td>
+            <td class="api-documentation">
+                <p>Imprimer une attestation (Paje/Fiscale) d'un client<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id-Evaluations_doneOnly_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/clients/{id}/Evaluations?doneOnly={doneOnly}&amp;Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des évaluations d'un client<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-Evaluation-id">GET api/clients/Evaluation/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer une évaluation d'un client<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-interventions-id-ExecutedTasks_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/interventions/{id}/ExecutedTasks?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des tâches effectuées liées à une intervention<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Transmissions">Transmissions</h2>
+    <p>Gestion des transmissions</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-transmissions-clientReport-types">GET api/transmissions/clientReport/types</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des types de transmission narrative<br>Droits requis : Avancé / Niveau 3<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-transmissions-ClientReports_start_end_clientId_typeId">GET api/transmissions/ClientReports?start={start}&amp;end={end}&amp;clientId={clientId}&amp;typeId={typeId}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des transmissions narratives<br>Droits requis : Avancé / Niveau 3<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-transmissions-clientReport_since_clientId_typeId">GET api/transmissions/clientReport?since={since}&amp;clientId={clientId}&amp;typeId={typeId}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des changements dans les transmissions narratives<br>Droits requis : Avancé / Niveau 3<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-transmissions-clientReport-id">GET api/transmissions/clientReport/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer une transmission narrative<br>Droits requis : Avancé / Niveau 3<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-transmissions-clientReport">POST api/transmissions/clientReport</a></td>
+            <td class="api-documentation">
+                <p>Créer une nouvelle transmission narrative<br>Droits requis : Avancé / Niveau 3</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-transmissions-clientReport-transmissionId-item">POST api/transmissions/clientReport/{transmissionId}/item</a></td>
+            <td class="api-documentation">
+                <p>Créer une information de transmission narrative sur une transmission existante<br>Droits requis : Avancé / Niveau 3</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-transmissions-clientReport-id">PUT api/transmissions/clientReport/{id}</a></td>
+            <td class="api-documentation">
+                <p>Modifie une transmission narrative<br>Droits requis : Avancé / Niveau 3</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-transmissions-clientReport-item-id">PUT api/transmissions/clientReport/item/{id}</a></td>
+            <td class="api-documentation">
+                <p>Modifie une information de transmission narrative<br>Droits requis : Avancé / Niveau 3</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-transmissions-ssiadTargetedTransmission-targets">GET api/transmissions/ssiadTargetedTransmission/targets</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des cibles de transmission ciblées<br>Droits requis : Avancé / Niveau 3<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-transmissions-ssiadTargetedTransmissions_start_end_clientId_targetId">GET api/transmissions/ssiadTargetedTransmissions?start={start}&amp;end={end}&amp;clientId={clientId}&amp;targetId={targetId}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des transmissions ciblées<br>Droits requis : Avancé / Niveau 3<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-transmissions-ssiadTargetedTransmission_since_clientId_targetId">GET api/transmissions/ssiadTargetedTransmission?since={since}&amp;clientId={clientId}&amp;targetId={targetId}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des changements dans les transmissions ciblées<br>Droits requis : Avancé / Niveau 3<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-transmissions-ssiadTargetedTransmission-id">GET api/transmissions/ssiadTargetedTransmission/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer une transmission ciblée<br>Droits requis : Avancé / Niveau 3<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-transmissions-ssiadTargetedTransmission">POST api/transmissions/ssiadTargetedTransmission</a></td>
+            <td class="api-documentation">
+                <p>Créer une nouvelle transmission ciblée<br>Droits requis : Avancé / Niveau 3</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-transmissions-ssiadTargetedTransmission-transmissionId-item">POST api/transmissions/ssiadTargetedTransmission/{transmissionId}/item</a></td>
+            <td class="api-documentation">
+                <p>Créer un complément de transmission ciblée sur une transmission existante<br>Droits requis : Avancé / Niveau 3</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-transmissions-ssiadTargetedTransmission-id">PUT api/transmissions/ssiadTargetedTransmission/{id}</a></td>
+            <td class="api-documentation">
+                <p>Modifie une transmission ciblée<br>Droits requis : Avancé / Niveau 3</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-transmissions-ssiadTargetedTransmission-item-id">PUT api/transmissions/ssiadTargetedTransmission/item/{id}</a></td>
+            <td class="api-documentation">
+                <p>Modifie un complément de transmissions ciblée<br>Droits requis : Avancé / Niveau 3</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="ClientVitalSigns">ClientVitalSigns</h2>
+    <p>Gestion des constantes</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clientVitalSigns-id">GET api/clientVitalSigns/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la saisie de constante<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clientVitalSigns_clientId_period-Start_period-End_request-Offset_request-Top_request-ComputeHasMoreRows_request-ComputeHitCount_request-Search_vitalSignId">GET api/clientVitalSigns?clientId={clientId}&amp;period.Start={period.Start}&amp;period.End={period.End}&amp;request.Offset={request.Offset}&amp;request.Top={request.Top}&amp;request.ComputeHasMoreRows={request.ComputeHasMoreRows}&amp;request.ComputeHitCount={request.ComputeHitCount}&amp;request.Search={request.Search}&amp;vitalSignId={vitalSignId}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des constantes pour un client donné<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-vitalSigns-id">GET api/vitalSigns/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la constante<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-vitalSigns">GET api/vitalSigns</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des constantes<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-clientVitalSigns">POST api/clientVitalSigns</a></td>
+            <td class="api-documentation">
+                <p>Créer une nouvelle saisie de constante<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-clientVitalSigns-id">PUT api/clientVitalSigns/{id}</a></td>
+            <td class="api-documentation">
+                <p>Modifier une saisie de constante<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/DELETE-api-clientVitalSigns-id">DELETE api/clientVitalSigns/{id}</a></td>
+            <td class="api-documentation">
+                <p>Supprimer une saisie de constante<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="BankDetails">BankDetails</h2>
+    <p>Gestion des coordonnées bancaires</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-clients-id-bankDetails">POST api/clients/{id}/bankDetails</a></td>
+            <td class="api-documentation">
+                <p>Créer des Coordonnées bancaires pour un client<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-bankDetails-id-sepaMandate">POST api/bankDetails/{id}/sepaMandate</a></td>
+            <td class="api-documentation">
+                <p>Ajouter un Mandat Sepa à un IBAN<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-clients-id-bankDetails-bankDetailsId">PUT api/clients/{id}/bankDetails/{bankDetailsId}</a></td>
+            <td class="api-documentation">
+                <p>Modifier les coordonnées bancaires d'un client<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Absences">Absences</h2>
+    <p>Gestion des absences</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clientAbsences_startDate_endDate_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/clientAbsences?startDate={startDate}&amp;endDate={endDate}&amp;Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des absences clients<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Companies">Companies</h2>
+    <p>Gestion des Sociétés</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-companies">GET api/companies</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des Sociétés<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="AdministrativeDocument">AdministrativeDocument</h2>
+    <p>Gestion des documents administratifs</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-administrativeDocument_holderId_holderType_typeCode_issueDate_issueBy_validUntil_isNotValid_trustLevel">POST api/administrativeDocument?holderId={holderId}&amp;holderType={holderType}&amp;typeCode={typeCode}&amp;issueDate={issueDate}&amp;issueBy={issueBy}&amp;validUntil={validUntil}&amp;isNotValid={isNotValid}&amp;trustLevel={trustLevel}</a></td>
+            <td class="api-documentation">
+                <p>Ajoute à un porteur de document administratif un document<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Contacts">Contacts</h2>
+    <p>Gestion des contacts</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-contacts_LastName_FirstName_Partition_Email_PhoneNumber">GET api/contacts?LastName={LastName}&amp;FirstName={FirstName}&amp;Partition={Partition}&amp;Email={Email}&amp;PhoneNumber={PhoneNumber}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer tous les contacts par nom, prénom, adresse mail et partition<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-contacts">POST api/contacts</a></td>
+            <td class="api-documentation">
+                <p>Créer un nouveau contact<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-contacts-id-addClientContactLink-clientId_relationshipType_overrideIfNotEmpty">POST api/contacts/{id}/addClientContactLink/{clientId}?relationshipType={relationshipType}&amp;overrideIfNotEmpty={overrideIfNotEmpty}</a></td>
+            <td class="api-documentation">
+                <p>Attribuer un client à un contact<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-contacts-id-removeClientContactLink-clientId">POST api/contacts/{id}/removeClientContactLink/{clientId}</a></td>
+            <td class="api-documentation">
+                <p>Délier un client et un contact<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Parameters">Parameters</h2>
+    <p>Gestion du paramétrage</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-configParams">GET api/configParams</a></td>
+            <td class="api-documentation">
+                <p>Récupérer les paramètres de configuration<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-tenantParams">GET api/tenantParams</a></td>
+            <td class="api-documentation">
+                <p>Récupérer les paramètres de l'application<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Tenants">Tenants</h2>
+    <p>Gestion des applications</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-tenants_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/tenants?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des applications actives<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="ElectronicSignatures">ElectronicSignatures</h2>
+    <p>Gestion des signatures electroniques</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-signatureModels">GET api/signatureModels</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des modèles de signatures électroniques<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-electronicSignature-launchSignatureModel-ModelId_TargetId_SendSignature">POST api/electronicSignature/launchSignatureModel/{ModelId}?TargetId={TargetId}&amp;SendSignature={SendSignature}</a></td>
+            <td class="api-documentation">
+                <p>Déclencher une signature électronique à partir d'un modèle<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Coupons">Coupons</h2>
+    <p>Gestion des coupons</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-coupons_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/coupons?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des coupons de l'utilisateur connecté<br>Droits requis : Avancé / Niveau 2</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Demands">Demands</h2>
+    <p>Gestion des demandes</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-demandReasons_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/demandReasons?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des motifs de demande actifs<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-demands_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/demands?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des demandes de l'utilisateur connecté<br>Droits requis : Avancé / Niveau 1</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-demands-id">GET api/demands/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer une demande<br>Droits requis : Avancé / Niveau 1</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-demands">POST api/demands</a></td>
+            <td class="api-documentation">
+                <p>Ajouter une demande<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-demands-id">PUT api/demands/{id}</a></td>
+            <td class="api-documentation">
+                <p>Modifier une demande<br>Droits requis : Avancé / Niveau 1</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-demands-id-notes">PUT api/demands/{id}/notes</a></td>
+            <td class="api-documentation">
+                <p>Ajouter une note à un demande<br>Droits requis : Avancé / Niveau 1</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="HQAffiliates">HQAffiliates</h2>
+    <p>Gestion des franchises (Module Franchiseur)</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-affiliates_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/affiliates?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des Franchises<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-affiliates">POST api/affiliates</a></td>
+            <td class="api-documentation">
+                <p>Ajouter une Franchise<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Attachments">Attachments</h2>
+    <p>Gestion des pièces jointes</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-quotes-id-attachments_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/quotes/{id}/attachments?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer les pièces jointes d'un devis<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id-attachments_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/clients/{id}/attachments?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer les pièces jointes d'un client<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-clients-id-attachments_published">POST api/clients/{id}/attachments?published={published}</a></td>
+            <td class="api-documentation">
+                <p>Ajouter une pièce jointe à un client<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-quotes-id-attachments_published">POST api/quotes/{id}/attachments?published={published}</a></td>
+            <td class="api-documentation">
+                <p>Ajouter une pièce jointe à un devis<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/DELETE-api-clients-id-attachments-attachmentId">DELETE api/clients/{id}/attachments/{attachmentId}</a></td>
+            <td class="api-documentation">
+                <p>Supprimer une pièce jointe d'un client<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/DELETE-api-quotes-id-attachments-attachmentId">DELETE api/quotes/{id}/attachments/{attachmentId}</a></td>
+            <td class="api-documentation">
+                <p>Supprimer une pièce jointe d'un devis<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-demands-id-attachments_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/demands/{id}/attachments?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer les pièces jointes d'une demande<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-demands-id-attachments_published">POST api/demands/{id}/attachments?published={published}</a></td>
+            <td class="api-documentation">
+                <p>Ajouter une pièce jointe à une demande<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/DELETE-api-demands-id-attachments-attachmentId">DELETE api/demands/{id}/attachments/{attachmentId}</a></td>
+            <td class="api-documentation">
+                <p>Supprimer une pièce jointe d'une demande<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Payroll">Payroll</h2>
+    <p>Gestion des bulletins de paie (Module Paie)</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-leavesBalance">POST api/leavesBalance</a></td>
+            <td class="api-documentation">
+                <p>Récupérer le solde de congés payés d'un intervenant<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Application">Application</h2>
+    <p>Gestion des entités</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-agencies_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search_lastModification">GET api/agencies?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}&amp;lastModification={lastModification}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des entités actives<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Mission">Mission</h2>
+    <p>Gestion des missions</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-missions_startAfter_clientId">GET api/missions?startAfter={startAfter}&amp;clientId={clientId}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des missions d'un client<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-missions-id">GET api/missions/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer une mission<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="GraphQL">GraphQL</h2>
+    <p>Cette API permet d'accéder à l'ensemble des classes et champs de l'application.
+            La syntaxe de la requête doit respecter le standard GraphQL. Des exemples d'utilisation sont disponibles dans le fichier d'exemple Postman.</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-graphql">POST api/graphql</a></td>
+            <td class="api-documentation">
+                <p>API GraphQL<br>Droits requis : Expert / Niveau 1</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="PaySlips">PaySlips</h2>
+    <p>Gestion des bulletins de paie</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-paySlips_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/paySlips?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des bulletins de paie publiés de l'intervenant connecté<br>Droits requis : Avancé / Niveau 1</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="UpdateScheduleRequests">UpdateScheduleRequests</h2>
+    <p>Gestion des demandes de changement de planning</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-updateScheduleRequests-availableSlots_Date_Start_End_Duration_ClientId_AgentId_ClientHelperId_AgentScope_SpacingDuration_Needs">GET api/updateScheduleRequests/availableSlots?Date={Date}&amp;Start={Start}&amp;End={End}&amp;Duration={Duration}&amp;ClientId={ClientId}&amp;AgentId={AgentId}&amp;ClientHelperId={ClientHelperId}&amp;AgentScope={AgentScope}&amp;SpacingDuration={SpacingDuration}&amp;Needs={Needs}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des créneaux disponibles<br>Droits requis : Avancé / Niveau 3<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-updateScheduleRequests-create">POST api/updateScheduleRequests/create</a></td>
+            <td class="api-documentation">
+                <p>Créer une demande de modification de planning<br>Droits requis : Avancé / Niveau 3</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-updateScheduleRequests-changes_since_clientId">GET api/updateScheduleRequests/changes?since={since}&amp;clientId={clientId}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des demandes de modifications de planning dernièrement créées, modifiées ou supprimées<br>Droits requis : Avancé / Niveau 3</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Products">Products</h2>
+    <p>Gestion des produits</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-productUniverses_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/productUniverses?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des univers de produits (Option Ximi)<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-categories_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search_lastModification">GET api/categories?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}&amp;lastModification={lastModification}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des catégories de produit<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-productUniverses-id-categories_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/productUniverses/{id}/categories?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des catégories de produit par univers (Option Ximi)<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-metaProducts_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search_lastModification">GET api/metaProducts?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}&amp;lastModification={lastModification}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des produits référence publiés (Application Réseau)<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-agencies-id-products_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search_lastModification">GET api/agencies/{id}/products?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}&amp;lastModification={lastModification}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des produits actifs d'une entité<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-productCategories-id-products_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/productCategories/{id}/products?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des produits d'une catégorie de produit<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-metaProducts-id-estimatedHours_values[0]-key_values[0]-value_values[1]-key_values[1]-value">GET api/metaProducts/{id}/estimatedHours?values[0].key={values[0].key}&amp;values[0].value={values[0].value}&amp;values[1].key={values[1].key}&amp;values[1].value={values[1].value}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer l'estimation en heures d'un besoin pour un produit référence donné<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="AgentAvailabilities">AgentAvailabilities</h2>
+    <p>Gestion des disponibilités</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-agentAvailabilities_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/agentAvailabilities?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des disponibilités de l'intervenant connecté<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-agentAvailabilities-id">GET api/agentAvailabilities/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer une disponibilité pour l'intervenant connecté<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-agentAvailabilities">POST api/agentAvailabilities</a></td>
+            <td class="api-documentation">
+                <p>Créer des disponibilités pour l'intervenant connecté<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-agentAvailabilities-id_start_end">PUT api/agentAvailabilities/{id}?start={start}&amp;end={end}</a></td>
+            <td class="api-documentation">
+                <p>Modifier une disponibilité pour l'intervenant connecté<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/DELETE-api-agentAvailabilities-id">DELETE api/agentAvailabilities/{id}</a></td>
+            <td class="api-documentation">
+                <p>Supprimer une disponibilité pour l'intervenant connecté<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="SecurityPrincipal">SecurityPrincipal</h2>
+    <p>Gestion des Commettants</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-securityPrincipal-roles_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/securityPrincipal/roles?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des rôles<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-securityPrincipal-id-roles">GET api/securityPrincipal/{id}/roles</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des rôles d'un commettant<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-securityPrincipal-id-roles-roleId">POST api/securityPrincipal/{id}/roles/{roleId}</a></td>
+            <td class="api-documentation">
+                <p>Attribuer un rôle à un commettant<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/DELETE-api-securityPrincipal-id-roles-roleId">DELETE api/securityPrincipal/{id}/roles/{roleId}</a></td>
+            <td class="api-documentation">
+                <p>Supprimer un rôle d'un commettant<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Files">Files</h2>
+    <p>Gestion des Fichiers</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-files_token">GET api/files?token={token}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer le contenu d'un fichier<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="AcquisitionChannels">AcquisitionChannels</h2>
+    <p>Gestion des canaux d'acquisition</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-acquisitionChannels_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/acquisitionChannels?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des Canaux d'acquisition<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Tasks">Tasks</h2>
+    <p>Gestion des tâches</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-taskTypes_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/taskTypes?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des types de tâches<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-tasks_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/tasks?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des tâches<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-tasks-id">GET api/tasks/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer une tâche<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-tasks">POST api/tasks</a></td>
+            <td class="api-documentation">
+                <p>Ajouter une tâche<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-tasks-id">PUT api/tasks/{id}</a></td>
+            <td class="api-documentation">
+                <p>Modifier une tâche<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Helpers">Helpers</h2>
+    <p>Gestion des aidants (Module Extranet Aidants)</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-helpers">GET api/helpers</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des aidants<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-helpers-id">GET api/helpers/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer un aidant<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-helpers">POST api/helpers</a></td>
+            <td class="api-documentation">
+                <p>Ajouter un aidant<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-helpers-id">PUT api/helpers/{id}</a></td>
+            <td class="api-documentation">
+                <p>Modifier un aidant<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-helpers-id-access">POST api/helpers/{id}/access</a></td>
+            <td class="api-documentation">
+                <p>Créer un accès extranet pour un aidant<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/DELETE-api-helpers-id-access-accessId">DELETE api/helpers/{id}/access/{accessId}</a></td>
+            <td class="api-documentation">
+                <p>Supprimer l'accès extranet de l'aidant<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="ClientHelpers">ClientHelpers</h2>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clientHelpers-id_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/clientHelpers/{id}?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des liens aidants/aidé pour un aidant<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-securityPrincipalRoles_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/securityPrincipalRoles?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des roles ciblant les aidants<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-securityPrincipalRoles-id">GET api/securityPrincipalRoles/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des roles aidants ciblant un aidant<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-clientHelpers-id-securityPrincipalRole-roleId">POST api/clientHelpers/{id}/securityPrincipalRole/{roleId}</a></td>
+            <td class="api-documentation">
+                <p>Attribuer un rôle à un utilisateur extranet aidant<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/DELETE-api-clientHelpers-id-securityPrincipalRole-roleId">DELETE api/clientHelpers/{id}/securityPrincipalRole/{roleId}</a></td>
+            <td class="api-documentation">
+                <p>Supprimer un rôle d'un utilisateur extranet aidant<br>Droits requis : Avancé / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Campaigns">Campaigns</h2>
+    <p>Gestion des campagnes</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-campaigns_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search_type">GET api/campaigns?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}&amp;type={type}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des campagnes<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-campaigns-id">GET api/campaigns/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer une campagne<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="BillingEntities">BillingEntities</h2>
+    <p>Gestion des Tiers Payeurs</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-billingEntities_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/billingEntities?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer tous les tiers payeurs<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Interventions">Interventions</h2>
+    <p>Gestion des interventions</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-interventions_startDate_endDate_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/interventions?startDate={startDate}&amp;endDate={endDate}&amp;Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des interventions<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-interventions-changes_since">GET api/interventions/changes?since={since}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des interventions dernièrement créées, modifiées ou supprimées<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-interventions-id">GET api/interventions/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer une intervention<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-interventions-createInterventionCoupons_start_duration_coupons">POST api/interventions/createInterventionCoupons?start={start}&amp;duration={duration}&amp;coupons={coupons}</a></td>
+            <td class="api-documentation">
+                <p>Ajouter une intervention avec des coupons<br>Droits requis : Avancé / Niveau 1</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-interventions-id-validate_checking_motif_lateDelay_comment">PUT api/interventions/{id}/validate?checking={checking}&amp;motif={motif}&amp;lateDelay={lateDelay}&amp;comment={comment}</a></td>
+            <td class="api-documentation">
+                <p>Valider une intervention<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-interventions-accept">PUT api/interventions/accept</a></td>
+            <td class="api-documentation">
+                <p>Accepter une liste d'interventions (Module Validation déléguée)<br>Droits requis : Avancé / Niveau 1</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-interventions-print_isMonthly_startPeriod">GET api/interventions/print?isMonthly={isMonthly}&amp;startPeriod={startPeriod}</a></td>
+            <td class="api-documentation">
+                <p>Imprimer le planning<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-checkInOut_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search_lastModification">GET api/checkInOut?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}&amp;lastModification={lastModification}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer les pointages de télégestion<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-pecs_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search_lastModification">GET api/pecs?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}&amp;lastModification={lastModification}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer les prises en charge<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Quotes">Quotes</h2>
+    <p>Gestion des devis</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id-quotes">GET api/clients/{id}/quotes</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des devis d'un client<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-clients-id-quotes">POST api/clients/{id}/quotes</a></td>
+            <td class="api-documentation">
+                <p>Créer un Devis<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-clients-id-quotes-quoteId">PUT api/clients/{id}/quotes/{quoteId}</a></td>
+            <td class="api-documentation">
+                <p>Modifier un Devis<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-clients-id-quotes-quoteId-print">GET api/clients/{id}/quotes/{quoteId}/print</a></td>
+            <td class="api-documentation">
+                <p>Récupérer le contenu du fichier PDF de l'impression d'un Devis<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-clients-id-quotes-startSign">POST api/clients/{id}/quotes/startSign</a></td>
+            <td class="api-documentation">
+                <p>Signer un ou des devis d'un client<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-quotes-cancel">POST api/quotes/cancel</a></td>
+            <td class="api-documentation">
+                <p>Annuler un devis<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Users">Users</h2>
+    <p>Gestion des utilisateurs</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-users">POST api/users</a></td>
+            <td class="api-documentation">
+                <p>Inscrire un utilisateur extranet<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-users-sendvalidationemail">POST api/users/sendvalidationemail</a></td>
+            <td class="api-documentation">
+                <p>Renvoyer le mail de validation de compte d'un utilisateur<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-users-verify">POST api/users/verify</a></td>
+            <td class="api-documentation">
+                <p>Vérifier un compte utilisateur<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-users-sessions">POST api/users/sessions</a></td>
+            <td class="api-documentation">
+                <p>Authentifier un utilisateur<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-users-sessions-current">GET api/users/sessions/current</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la session courante de l'utilisateur (Token utilisateur requis)<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-users-forgotpassword">POST api/users/forgotpassword</a></td>
+            <td class="api-documentation">
+                <p>Mot de passe oublié<br>            Si l'utilisateur est existant, un email lui sera transmis avec un Code. <br>            Ce code devra être utilisé par l'utilisateur sur la page de votre choix pour autoriser le reset du mot de passe (méthode POST api/users/resetpassword).<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-users-resetpassword">POST api/users/resetpassword</a></td>
+            <td class="api-documentation">
+                <p>Réinitialiser le mot de passe d'un utilisateur extranet<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-users-changepassword">POST api/users/changepassword</a></td>
+            <td class="api-documentation">
+                <p>Mettre à jour le mot de passe d'un utilisateur extranet (Token utilisateur requis)<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-users-id">PUT api/users/{id}</a></td>
+            <td class="api-documentation">
+                <p>Mettre à jour les informations de l'utilisateur extranet (Token utilisateur requis)<br>Droits requis : Base / Niveau 2</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Skills">Skills</h2>
+    <p>Gestion des Besoins/Compétences</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-skills_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/skills?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des Besoins/Compétences<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Sectors">Sectors</h2>
+    <p>Gestion des secteurs (Module Secteurs)</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-sectors_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search_zipCode">GET api/sectors?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}&amp;zipCode={zipCode}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des secteurs actifs<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="ContactSources">ContactSources</h2>
+    <p>Gestion des origines</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-contactSources_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/contactSources?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des Origines<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Surveys">Surveys</h2>
+    <p>Gestion des enquêtes (Module Enquêtes)</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-surveys_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/surveys?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des enquêtes envoyées à l'utilisateur connecté et non répondues<br>Droits requis : Avancé / Niveau 1</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-answerSurvey">PUT api/answerSurvey</a></td>
+            <td class="api-documentation">
+                <p>Enregistrer les réponses à une enquête adressée à l'utilisateur connecté<br>Droits requis : Avancé / Niveau 1</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+<h2 id="Agents">Agents</h2>
+    <p>Gestion des Intervenants</p>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-agents_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/agents?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des intervenants<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-agents-id">GET api/agents/{id}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer un intervenant<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/POST-api-agents">POST api/agents</a></td>
+            <td class="api-documentation">
+                <p>Créer un nouvel intervenant<br>Droits requis : Base / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-agents-id">PUT api/agents/{id}</a></td>
+            <td class="api-documentation">
+                <p>Modifier un intervenant<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-agents-id-notes">PUT api/agents/{id}/notes</a></td>
+            <td class="api-documentation">
+                <p>Ajouter une Note dans le Journal d'un intervenant<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/GET-api-agents-id-surveys_Offset_Top_ComputeHasMoreRows_ComputeHitCount_Search">GET api/agents/{id}/surveys?Offset={Offset}&amp;Top={Top}&amp;ComputeHasMoreRows={ComputeHasMoreRows}&amp;ComputeHitCount={ComputeHitCount}&amp;Search={Search}</a></td>
+            <td class="api-documentation">
+                <p>Récupérer la liste des enquêtes envoyées à un intervenant et non répondues<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-agents-id-answerSurvey">PUT api/agents/{id}/answerSurvey</a></td>
+            <td class="api-documentation">
+                <p>Répondre à une enquête adressée à l'intervenant<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-agents-id-skills">PUT api/agents/{id}/skills</a></td>
+            <td class="api-documentation">
+                <p>Affecte une liste de compétences à un intervenant<br>Droits requis : Base / Niveau 2<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-agents-id-coverLetter">PUT api/agents/{id}/coverLetter</a></td>
+            <td class="api-documentation">
+                <p>[NB : Méthode obsolète : préférer l'utilisation de la méthode d'ajout de document administratif]<br>            Affecte une lettre de motivation à un intervenant. Les types de fichiers acceptés sont: pdf, msword, openxml, jpeg, jpg, gif<br>            Le fichier doit être joint en multipart/form-data<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="https://api.ximi.xelya.io/Amli/Help/Api/PUT-api-agents-id-CV">PUT api/agents/{id}/CV</a></td>
+            <td class="api-documentation">
+                <p>[NB : Méthode obsolète : préférer l'utilisation de la méthode d'ajout de document administratif]<br>            Affecte un CV à un intervenant. Les types de fichiers acceptés sont: pdf, msword, openxml, jpeg, jpg, gif<br>            Le fichier doit être joint en multipart/form-data<br>Droits requis : Avancé / Niveau 1<br>Bearer token non requis</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+    </section>
+</div>
+
+
+</body></html>
